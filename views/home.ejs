@@ -1,0 +1,21 @@
+Home1
+
+
+<form method="post" action="/">
+    <input type="text" name="name">
+    <input type="text" name="email"> 
+    <input type="submit" value="Submit">
+</form>
+
+<button id="button">post</button> 
+
+
+<script>
+     var test = function(){
+       fetch('/go', {method: 'POST'})
+    }
+var update = document.getElementById('button');
+    update.addEventListener('click', test );
+    
+   
+</script>
