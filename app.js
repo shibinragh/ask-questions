@@ -1,13 +1,22 @@
 const express = require('express');
-const morgan  = require('morgan');
+const logger  = require('morgan');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const createError = require('http-errors');
 const mongoose = require('mongoose');
 const bCrypt = require('bcrypt-nodejs');
+var flash = require('req-flash');
 
 const app = express();
+
+
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+app.use(logger('dev'));
+app.use(express.static(path.join(__dirname, 'public') ) );
+
+
 //app.use(morgan('combined')); 
 app.use(bodyParser());
 app.use(express.json());
@@ -16,9 +25,14 @@ app.use(express.urlencoded({
 }));
 app.use(cookieParser());
 
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
-app.use(express.static(path.join(__dirname, 'public') ) );
+//mongoose.connect('mongodb://shibinragh1:password123@ds147391.mlab.com:47391/ask-questions');
+//mongoose.connect('mongodb://shibinragh:password123@ds233571.mlab.com:33571/node-crud-express-mongo', { useNewUrlParser: true });
+
+var dbConfig = require('./db/db.js');
+var User = require('./db/models/auth.js');
+mongoose.connect(dbConfig.url);
+
+
 
 
 // Configuring Passport
@@ -28,17 +42,8 @@ const LocalStrategy = require('passport-local').Strategy;
 app.use(expressSession({
     secret: 'mysecret'
 }));
+app.use(flash());
 
-mongoose.connect('mongodb://shibinragh:password123@ds147391.mlab.com:47391/ask-qusestions');
-const Schema = mongoose.Schema;
-const UserDetail = new Schema({
-    username: String,
-    password: String,
-    firstname: String,
-    lastname: String,
-    email: String
-});
-const User = mongoose.model('userInfo', UserDetail, 'userInfo');
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -69,12 +74,12 @@ passport.use('login', new LocalStrategy({
                 // Username does not exist, log error & redirect back
                 if (!user) {
                     console.log('User Not Found with username ' + username);
-                    return done(null, false)//,req.flash('message', 'User Not found.'));
+                    return done(null, false);
                 }
                 // User exists but wrong password, log the error 
                 if (!isValidPassword(user, password)) {
                     console.log('Invalid Password');
-                    return done(null, false)//,req.flash('message', 'Invalid Password'));
+                    return done(null, false);
                 }
                 // User and password both match, return user from 
                 // done method which will be treated like success
@@ -105,8 +110,9 @@ passport.use('signup', new LocalStrategy({
                 // already exists
                 if (user) {
                     console.log('User already exists');
-                    return done(null, false)//,req.flash('message', 'User Already Exists'));
+                    return done(null, false);
                 } else {
+                    console.log(username);
                     // if there is no user with that email
                     // create the user
                     var newUser = new User();
@@ -116,7 +122,7 @@ passport.use('signup', new LocalStrategy({
                     newUser.email = req.param('email');
                     newUser.firstName = req.param('firstName');
                     newUser.lastName = req.param('lastName');
-
+                    console.log(newUser);
                     // save the user
                     newUser.save(function (err) {
                         if (err) {
@@ -172,7 +178,7 @@ app.post('/login', passport.authenticate('login', {
 
 
 
-app.get('/', (req, res) => {
+app.get('/', isLoggedIn, (req, res) => {
     res.render('index');
 });
 app.get('/home', (req, res) => { 
@@ -191,10 +197,7 @@ app.get('/go', (req, res) => {
     res.status(404).send("Oh uh, something went wrong");
 });
 
-app.post('/', function(req, res){
-    console.log(req.body.name);
-    console.log(req.body.email);
-});
+
 app.listen(3000, function(){
     console.log('port 3000');
 })
