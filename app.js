@@ -31,7 +31,7 @@ app.use(cookieParser());
 var dbConfig = require('./db/db.js');
 var User = require('./db/models/auth.js');
 mongoose.connect(dbConfig.url);
-
+var db = mongoose.connection;
 
 // Configuring Passport
 var passport = require('passport');
@@ -176,6 +176,16 @@ console.log('test');
 
 
 
+
+
+app.post('/ask-question', (req, res) => {
+    db.collection('quotes').save(req.body, (err, result) => {
+    if (err) return console.log(err)
+
+    console.log('saved to database')
+    res.redirect('/')
+  })
+});
 app.get('/', isLoggedIn, (req, res) => {
     res.render('index');
 });
@@ -188,8 +198,8 @@ app.get('/login', (req, res) =>{
 app.get('/signup', (req, res) =>{
     res.render('register');
 });
-app.post('/go', (req, res) => {
-    console.log('goo' + req.body.name);
+app.get('/ask-question', isLoggedIn, (req, res) => {
+    res.render('ask-question', {data: req.user.username })
 });
 app.get('/go', (req, res) => {
     res.status(404).send("Oh uh, something went wrong");
