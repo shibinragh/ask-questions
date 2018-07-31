@@ -179,14 +179,25 @@ console.log('test');
 
 
 app.post('/ask-question', (req, res) => {
-    db.collection('quotes').save(req.body, (err, result) => {
+    console.log(data._id);
+    User.update(
+        {_id: data._id },
+        {$set:{username: 'nikru' } }
+    )
+    
+    
+    /*db.collection('userInfo').update(req.body, (err, result) => {
+        console.log(req.body);
     if (err) return console.log(err)
 
     console.log('saved to database')
     res.redirect('/')
-  })
+  })*/
+    
 });
+var data;
 app.get('/', isLoggedIn, (req, res) => {
+    data =  req.user;
     res.render('index');
 });
 app.get('/home', (req, res) => { 
@@ -199,7 +210,7 @@ app.get('/signup', (req, res) =>{
     res.render('register');
 });
 app.get('/ask-question', isLoggedIn, (req, res) => {
-    res.render('ask-question', {data: req.user.username })
+    res.render('ask-question', {data: data.username })
 });
 app.get('/go', (req, res) => {
     res.status(404).send("Oh uh, something went wrong");
