@@ -7,7 +7,14 @@ const UserDetail = new Schema({
     password: String,
     firstname: String,
     lastname: String,
-    email: String
+    email: String,
+    posts: [{
+        post:{
+            title: String,
+            article: String,
+            comments: {}
+        }
+    }]
 });
 const User = mongoose.model('userInfo', UserDetail, 'userInfo');
 

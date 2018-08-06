@@ -1,5 +1,5 @@
 const express = require('express');
-const logger  = require('morgan');
+const logger = require('morgan');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
@@ -14,7 +14,7 @@ const app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(logger('dev'));
-app.use(express.static(path.join(__dirname, 'public') ) );
+app.use(express.static(path.join(__dirname, 'public')));
 
 
 //app.use(morgan('combined')); 
@@ -30,6 +30,7 @@ app.use(cookieParser());
 
 var dbConfig = require('./db/db.js');
 var User = require('./db/models/auth.js');
+var Quotes = require('./db/models/quotes.js');
 mongoose.connect(dbConfig.url);
 var db = mongoose.connection;
 
@@ -45,7 +46,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 passport.serializeUser(function (user, done) {
-    done(null, user._id); 
+    done(null, user._id);
 });
 passport.deserializeUser(function (id, done) {
     User.findById(id, function (err, user) {
@@ -72,19 +73,19 @@ passport.use('login', new LocalStrategy({
                 // Username does not exist, log error & redirect back
                 if (!user) {
                     console.log('User Not Found with username ' + username);
-                    return done(null, false)//,req.flash('message', 'User Not found.'));
+                    return done(null, false) //,req.flash('message', 'User Not found.'));
                 }
                 // User exists but wrong password, log the error 
                 if (!isValidPassword(user, password)) {
                     console.log('Invalid Password');
-                    return done(null, false)//,req.flash('message', 'Invalid Password'));
+                    return done(null, false) //,req.flash('message', 'Invalid Password'));
                 }
                 // User and password both match, return user from 
                 // done method which will be treated like success
                 return done(null, user);
             }
         );
-}));
+    }));
 var isValidPassword = function (user, password) {
     return bCrypt.compareSync(password, user.password);
 }
@@ -106,7 +107,7 @@ passport.use('signup', new LocalStrategy({
                 // already exists
                 if (user) {
                     console.log('User already exists');
-                    return done(null, false)//,req.flash('message', 'User Already Exists'));
+                    return done(null, false) //,req.flash('message', 'User Already Exists'));
                 } else {
                     // if there is no user with that email
                     // create the user
@@ -134,7 +135,7 @@ passport.use('signup', new LocalStrategy({
         // Delay the execution of findOrCreateUser and execute 
         // the method in the next tick of the event loop
         process.nextTick(findOrCreateUser);
-}));
+    }));
 
 // Generates hash using bCrypt
 var createHash = function (password) {
@@ -149,10 +150,10 @@ app.post('/signup', passport.authenticate('signup', {
     failureFlash: true
 }));
 /* Handle Logout */
-app.get('/signout', function(req, res) {
-  console.log('logout');
-  req.logout();
-  res.redirect('/login');
+app.get('/signout', function (req, res) {
+    console.log('logout');
+    req.logout();
+    res.redirect('/login');
 });
 /* Handle Login POST */
 app.post('/login', passport.authenticate('login', {
@@ -165,58 +166,66 @@ app.post('/login', passport.authenticate('login', {
 
 // route middleware to make sure a user is logged in
 function isLoggedIn(req, res, next) {
-console.log('test');
+    console.log('test');
     // if user is authenticated in the session, carry on 
     if (req.isAuthenticated())
         return next();
 
     // if they aren't redirect them to the home page
     res.redirect('/login');
-} 
+}
 
+var data; 
 
-
-
+app.put('/test', (req, res) =>{
+    var quotes =  new Quotes(req.body);
+    quotes.save(function(err, result){
+        console.log(result);
+    });
+     
+})
 
 app.post('/ask-question', (req, res) => {
     console.log(data._id);
-    User.update(
-        {_id: data._id },
-        {$set:{username: 'nikru' } }
-    )
-    
-    
-    /*db.collection('userInfo').update(req.body, (err, result) => {
-        console.log(req.body);
-    if (err) return console.log(err)
 
-    console.log('saved to database')
-    res.redirect('/')
-  })*/
-    
+    User.findOneAndUpdate({
+        _id: data._id
+    }, {
+        $set: {
+            "posts": [{
+                "post": {
+                    "article": req.body.description
+                }
+            }]
+        }
+    });
+ 
+
 });
-var data;
+
 app.get('/', isLoggedIn, (req, res) => {
-    data =  req.user;
+    data = req.user;
     res.render('index');
 });
-app.get('/home', (req, res) => { 
+app.get('/home', (req, res) => {
     res.render('home');
 });
-app.get('/login', (req, res) =>{
+app.get('/login', (req, res) => {
     res.render('login');
 });
-app.get('/signup', (req, res) =>{
+app.get('/signup', (req, res) => {
     res.render('register');
 });
 app.get('/ask-question', isLoggedIn, (req, res) => {
-    res.render('ask-question', {data: data.username })
+    res.render('ask-question', {
+        data: data.username
+    })
 });
 app.get('/go', (req, res) => {
     res.status(404).send("Oh uh, something went wrong");
 });
 
 
-app.listen(3000, function(){
+app.listen(3000, function () {
     console.log('port 3000');
 })
